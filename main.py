@@ -8,6 +8,8 @@ import uuid
 from fastapi import HTTPException
 from pydantic import BaseModel
 import jwt
+from fastapi.responses import JSONResponse
+
 
 # Replace with your logged-in email exactly
 EMAIL = "24f2006966@ds.study.iitm.ac.in"
@@ -82,12 +84,11 @@ async def verify(req: TokenRequest):
             "aud": payload["aud"],
         }
 
-from fastapi.responses import JSONResponse
 
 # ...
 
-except Exception:
-    return JSONResponse(
-        status_code=401,
-        content={"valid": False}
-    )
+    except Exception:
+        return JSONResponse(
+            status_code=401,
+            content={"valid": False}
+        )
