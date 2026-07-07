@@ -9,7 +9,19 @@ from fastapi import HTTPException
 from pydantic import BaseModel
 import jwt
 from fastapi.responses import JSONResponse
+import os
+import yaml
+from dotenv import load_dotenv
 
+app = FastAPI()
+load_dotenv()
+DEFAULTS = {
+    "port": 8000,
+    "workers": 1,
+    "debug": False,
+    "log_level": "info",
+    "api_key": "default-secret-000",
+}
 
 # Replace with your logged-in email exactly
 EMAIL = "24f2006966@ds.study.iitm.ac.in"
@@ -92,3 +104,59 @@ async def verify(req: TokenRequest):
             status_code=401,
             content={"valid": False}
         )
+
+@app.get("/effective-config")
+def effective_config(set: list[str] = Query(default=[])):
+    config = DEFAULTS.copy()
+
+    # YAML layer
+    if os.path.exists("config.development.yaml"):
+        with open("config.development.yaml", "r") as f:
+            data = yaml.safe_load(f)
+            if data:
+                config.update(data)
+
+    # .env layer
+    if os.getenv("NUM_WORKERS"):
+        config["workers"] = os.getenv("NUM_WORKERS")
+
+    if os.getenv("APP_API_KEY"):
+        config["api_key"] = os.getenv("APP_API_KEY")
+
+    # OS environment layer
+    if os.getenv("APP_LOG_LEVEL"):
+        config["log_level"] = os.getenv("APP_LOG_LEVEL")
+
+    if os.getenv("APP_API_KEY"):
+        config["api_key"] = os.getenv("APP_API_KEY")
+
+    # CLI overrides (?set=key=value)
+    for item in set:
+        if "=" not in item:
+            continue
+
+        key, value = item.split("=", 1)
+
+        if key in ("port", "workers"):
+            value = int(value)
+        elif key == "debug":
+            value = value.lower() in ("true", "1", "yes", "on")
+
+        config[key] = value
+
+    # Type coercion
+    config["port"] = int(config["port"])
+    config["workers"] = int(config["workers"])
+
+    if not isinstance(config["debug"], bool):
+        config["debug"] = str(config["debug"]).lower() in (
+            "true",
+            "1",
+            "yes",
+            "on",
+        )
+
+    # Always mask the API key
+    config["api_key"] = "****"
+
+    return config
