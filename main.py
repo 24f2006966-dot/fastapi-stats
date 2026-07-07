@@ -82,8 +82,12 @@ async def verify(req: TokenRequest):
             "aud": payload["aud"],
         }
 
-    except Exception:
-        raise HTTPException(
-            status_code=401,
-            detail={"valid": False},
-        )
+from fastapi.responses import JSONResponse
+
+# ...
+
+except Exception:
+    return JSONResponse(
+        status_code=401,
+        content={"valid": False}
+    )
