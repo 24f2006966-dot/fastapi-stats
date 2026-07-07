@@ -28,12 +28,11 @@ EMAIL = "24f2006966@ds.study.iitm.ac.in"
 
 ALLOWED_ORIGIN = "https://dash-h91voj.example.com"
 
-app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[ALLOWED_ORIGIN],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
