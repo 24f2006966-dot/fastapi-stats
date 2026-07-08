@@ -12,6 +12,20 @@ from fastapi.responses import JSONResponse
 import os
 import yaml
 from dotenv import load_dotenv
+from fastapi import Header
+from typing import List
+
+
+API_KEY = "ak_sqtgfvbrjoywro0oboayg8x8"
+
+class Event(BaseModel):
+    user: str
+    amount: float
+    ts: int
+
+class AnalyticsRequest(BaseModel):
+    events: List[Event]
+
 
 app = FastAPI()
 load_dotenv()
@@ -30,8 +44,8 @@ ALLOWED_ORIGIN = "https://dash-h91voj.example.com"
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[ALLOWED_ORIGIN],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -158,3 +172,38 @@ def effective_config(set: list[str] = Query(default=[])):
     config["api_key"] = "****"
 
     return config
+
+@app.post("/analytics")
+async def analytics(
+    req: AnalyticsRequest,
+    x_api_key: str | None = Header(default=None)
+):
+    if x_api_key != API_KEY:
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "Unauthorized"}
+        )
+
+    total_events = len(req.events)
+    unique_users = len({e.user for e in req.events})
+
+    revenue = 0.0
+    user_totals = {}
+
+    for event in req.events:
+        if event.amount > 0:
+            revenue += event.amount
+            user_totals[event.user] = (
+                user_totals.get(event.user, 0) + event.amount
+            )
+
+    top_user = max(user_totals, key=user_totals.get) if user_totals else ""
+
+    return {
+        "email": "24f2006966@ds.study.iitm.ac.in",
+        "total_events": total_events,
+        "unique_users": unique_users,
+        "revenue": revenue,
+        "top_user": top_user,
+    }
+    
