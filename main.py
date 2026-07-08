@@ -206,4 +206,4 @@ async def analytics(
         "revenue": revenue,
         "top_user": top_user,
     }
-    
+
